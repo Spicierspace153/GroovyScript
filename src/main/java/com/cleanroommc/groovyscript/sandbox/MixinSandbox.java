@@ -2,12 +2,12 @@ package com.cleanroommc.groovyscript.sandbox;
 
 import com.cleanroommc.groovyscript.GroovyScript;
 import groovy.util.GroovyScriptEngine;
-import groovy.util.ResourceException;
-import groovy.util.ScriptException;
 import groovyjarjarasm.asm.ClassVisitor;
 import groovyjarjarasm.asm.ClassWriter;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codehaus.groovy.ast.ClassNode;
 import org.codehaus.groovy.classgen.GeneratorContext;
 import org.codehaus.groovy.control.*;
@@ -16,30 +16,37 @@ import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 
 public class MixinSandbox {
 
     // make sure to run groovy mixins first, then run mod mixins into mc and then run these
 
+    public static final Logger LOG = LogManager.getLogger("GroovyScript-MixinSandbox");
     private static final ClassGenerator generator = new ClassGenerator();
-    private static final Class<?>[] mixinImportClasses = {Mixin.class, Inject.class, At.class};
+    private static final Class<?>[] mixinImportClasses = {Mixin.class, Inject.class, At.class, CallbackInfo.class,
+                                                          CallbackInfoReturnable.class};
+    private static final String MIXIN_PKG = "mixins.";
 
-    public static void compileMixinsSafe() {
+    public static Collection<String> compileMixinsSafe() {
         try {
-            compileMixins();
+            return compileMixins();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void compileMixins() throws IOException, ScriptException, ResourceException {
+    private static Collection<String> compileMixins() throws IOException {
         File root = GroovyScript.getScriptFile();
         URL rootUrl = root.toURI().toURL();
         GroovyScriptEngine engine = new GroovyScriptEngine(new URL[]{rootUrl});
@@ -49,10 +56,33 @@ public class MixinSandbox {
         config.addCompilationCustomizers(
                 new ImportCustomizer().addImports(Arrays.stream(mixinImportClasses).map(Class::getName).toArray(String[]::new)));
         engine.setConfig(config);
+        Collection<String> mixinClasses = new ArrayList<>();
         for (File mixinScript : GroovyScript.getRunConfig().getMixinFiles(GroovyScript.getScriptFile())) {
             String path = root.toPath().relativize(mixinScript.toPath()).toString();
-            engine.loadScriptByName(path);
+            String className = toClassName(path);
+            if (className == null) continue;
+            if (!className.startsWith(MIXIN_PKG)) {
+                LOG.error("Groovy mixins must be inside 'groovy/mixins/', but was in '{}'", path);
+                continue;
+            }
+            try {
+                engine.loadScriptByName(path);
+                mixinClasses.add(className.substring(MIXIN_PKG.length()));
+            } catch (Exception e) {
+                LOG.error("Error loading mixin class '{}'", path);
+                LOG.throwing(e);
+            }
         }
+        return mixinClasses;
+    }
+
+    private static String toClassName(String path) {
+        int i = path.lastIndexOf('.');
+        if (i < 0) {
+            LOG.error("Path must end with '.groovy', but was '{}'", path);
+            return null;
+        }
+        return path.substring(0, i).replace(File.separatorChar, '.');
     }
 
     private static class ClassGenerator implements CompilationUnit.ClassgenCallback {
