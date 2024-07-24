@@ -305,6 +305,10 @@ public class RunConfig {
         return getSortedFilesOf(root, paths);
     }
 
+    public Collection<File> getMixinFiles(File root) {
+        return getSortedFilesOf(root, Collections.singleton("mixins"));
+    }
+
     private Collection<File> getSortedFilesOf(File root, Collection<String> paths) {
         Object2IntLinkedOpenHashMap<File> files = new Object2IntLinkedOpenHashMap<>();
         String separator = getSeparator();

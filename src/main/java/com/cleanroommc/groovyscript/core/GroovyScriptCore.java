@@ -1,8 +1,12 @@
 package com.cleanroommc.groovyscript.core;
 
+import com.cleanroommc.groovyscript.GroovyScript;
+import com.cleanroommc.groovyscript.sandbox.MixinSandbox;
 import com.google.common.collect.ImmutableList;
 import net.minecraftforge.common.ForgeVersion;
+import net.minecraftforge.fml.relauncher.FMLInjectionData;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
+import org.spongepowered.asm.mixin.Mixins;
 import zone.rong.mixinbooter.IEarlyMixinLoader;
 
 import javax.annotation.Nullable;
@@ -35,6 +39,12 @@ public class GroovyScriptCore implements IFMLLoadingPlugin, IEarlyMixinLoader {
     @Override
     public void injectData(Map<String, Object> data) {
         source = (File) data.getOrDefault("coremodLocation", null);
+        // setup root path etc,
+        GroovyScript.initializeRunConfig((File) FMLInjectionData.data()[6]);
+        // called later than mixin booter, we can now try to compile groovy mixins
+        // the groovy mixins need to be compiled to bytes manually first
+        MixinSandbox.compileMixinsSafe();
+        Mixins.addConfiguration("mixin.groovyscript.custom.json");
     }
 
     @Override
