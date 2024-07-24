@@ -1,6 +1,5 @@
 package com.cleanroommc.groovyscript.sandbox;
 
-import net.minecraftforge.fml.common.Loader;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
@@ -60,10 +59,6 @@ public class FileUtil {
 
     public static File makeFile(String... pieces) {
         return new File(makePath(pieces));
-    }
-
-    public static String getMinecraftHome() {
-        return Loader.instance().getConfigDir().getParent();
     }
 
     public static boolean mkdirs(File file) {
