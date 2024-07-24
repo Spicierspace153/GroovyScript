@@ -120,12 +120,12 @@ public class SandboxData {
         return initialised;
     }
 
-    public static Path getRelativePath(File file) {
-        return getRelativePath(file.toPath());
+    public static File getRelativeFile(File file) {
+        return new File(getRelativePath(file.getPath()));
     }
 
-    public static Path getRelativePath(Path file) {
-        return getScriptFile().toPath().relativize(file);
+    public static String getRelativePath(String path) {
+        return FileUtil.relativize(getScriptPath(), path);
     }
 
     static Collection<File> getSortedFilesOf(File root, Collection<String> paths) {

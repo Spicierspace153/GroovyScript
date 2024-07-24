@@ -73,7 +73,7 @@ public class MixinSandbox {
         engine.setConfig(config);
         Collection<String> mixinClasses = new ArrayList<>();
         for (File mixinScript : getMixinFiles()) {
-            String path = SandboxData.getRelativePath(mixinScript).toString();
+            String path = SandboxData.getRelativePath(mixinScript.getPath());
             String className = toClassName(path);
             if (className == null) continue;
             if (!className.startsWith(MIXIN_PKG)) {

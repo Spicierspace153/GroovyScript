@@ -15,7 +15,8 @@
     "GroovyClassLoaderMixin",
     "Java8Mixin",
     "MetaClassImplMixin",
-    "ModuleNodeAccessor"
+    "ModuleNodeAccessor",
+    "ModuleNodeMixin"
   ],
   "client": [
   ]
